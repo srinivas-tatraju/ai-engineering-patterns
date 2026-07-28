@@ -1,24 +1,30 @@
 package com.aiengineeringpatterns.service.impl;
 
 import com.aiengineeringpatterns.service.ChatService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class ChatServiceImpl implements ChatService {
 
     private final ChatClient chatClient;
 
-    public ChatServiceImpl(ChatClient.Builder chatClientBuilder) {
-        this.chatClient = chatClientBuilder.build();
-    }
-
     @Override
     public String chat(String message) {
 
-        return chatClient
+        log.info("Received prompt: {}", message);
+
+        String response = chatClient
                 .prompt(message)
                 .call()
                 .content();
+
+        log.info("Generated response successfully.");
+
+        return response;
     }
 }
