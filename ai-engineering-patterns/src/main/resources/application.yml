@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: ai-engineering-patterns
+
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        options:
+          model: llama3.1
+
+server:
+  port: 8080

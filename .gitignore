@@ -1,6 +1,17 @@
 # Compiled class file
 *.class
 
+# IntelliJ
+.idea/
+*.iml
+
+# Maven
+target/
+
+# OS
+.DS_Store
+Thumbs.db
+
 # Log file
 *.log
 
