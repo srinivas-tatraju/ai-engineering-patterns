@@ -1,208 +1,227 @@
 # AI Engineering Patterns
 
-A production-oriented repository demonstrating modern AI engineering concepts using **Java 21**, **Spring Boot**, **Spring AI**, and **Large Language Models (LLMs)**.
+A production-style collection of AI engineering patterns built with **Java 21**, **Spring Boot 4**, **Spring AI**, and **Large Language Models (LLMs)**.
 
-This repository is organized as a series of branches, where each branch introduces a new AI engineering pattern and builds upon the previous one.
+The goal of this repository is to demonstrate modern AI application development using enterprise-grade architectural practices instead of simple chatbot examples.
 
 ---
 
 ## Repository Roadmap
 
-| Branch | Topic | Status |
-|---------|-------|--------|
-| 01 | AI Assistant | ✅ Completed |
-| 02 | Tool Calling | ⏳ Planned |
-| 03 | Model Context Protocol (MCP) | ⏳ Planned |
-| 04 | AI Recommendation Engine | ⏳ Planned |
-| 05 | AI Workflows | ⏳ Planned |
-| 06 | Event-Driven AI (Kafka) | ⏳ Planned |
-| 07 | Retrieval-Augmented Generation (RAG) | ⏳ Planned |
-| 08 | AI Agents | ⏳ Planned |
+| Branch | Status | Description |
+|---------|--------|-------------|
+| ✅ 01-ai-assistant | Completed | AI Chat Assistant using Spring AI + Ollama |
+| ✅ 02-tool-calling | Completed | AI Tool Calling with Spring AI |
+| ⏳ 03-model-context-protocol | Planned | MCP Client & Server |
+| ⏳ 04-ai-recommendation-engine | Planned | Business Recommendation Engine |
+| ⏳ 05-ai-workflows | Planned | Multi-step AI Workflows |
+| ⏳ 06-event-driven-ai | Planned | Kafka + AI Integration |
+| ⏳ 07-rag | Planned | Retrieval Augmented Generation |
+| ⏳ 08-ai-agents | Planned | Autonomous AI Agents |
 
 ---
 
-# Branch 01 - AI Assistant
+# Branch 02 - AI Tool Calling
 
-This branch implements a simple AI-powered conversational assistant using Spring AI and a locally hosted LLM.
+This branch demonstrates how a Large Language Model can invoke Java methods using **Spring AI Tool Calling**.
 
-The application exposes a REST API that accepts a user prompt and returns an AI-generated response.
+Instead of relying solely on the LLM's internal reasoning, the model can intelligently decide when to execute deterministic business logic implemented in Java.
 
 ---
 
 ## Features
 
-- Spring Boot 4.1
-- Java 21
-- Spring AI
-- Ollama Integration
-- Local LLM Execution
-- REST API
-- Request Validation
+- Spring AI Tool Calling
+- Calculator Tool
+- Layered Architecture
+- ChatClient Configuration
 - Global Exception Handling
-- Logging
-- Docker Support
+- Logging with Lombok
+- Externalized System Prompt
+- Dockerized Ollama Integration
 
 ---
 
 ## Tech Stack
 
-| Technology | Version |
-|------------|---------|
-| Java | 21 |
-| Spring Boot | 4.1 |
-| Spring AI | 2.x |
-| Ollama | Latest |
-| Maven | Latest |
-| Docker | Latest |
+- Java 21
+- Spring Boot 4.x
+- Spring AI
+- Ollama
+- Llama 3.1
+- Maven
+- Lombok
 
 ---
 
-## Architecture
+# Architecture
 
 ```
-                Client
-                   │
-                   ▼
+                User
+                  │
+                  ▼
           ChatController
-                   │
-                   ▼
+                  │
+                  ▼
             ChatService
-                   │
-                   ▼
+                  │
+                  ▼
              ChatClient
-                   │
-                   ▼
-              Spring AI
-                   │
-                   ▼
-                Ollama
-                   │
-                   ▼
-             Local LLM
+                  │
+                  ▼
+         Spring AI Tool Calling
+                  │
+                  ▼
+          CalculatorTool (@Tool)
+                  │
+                  ▼
+         CalculatorService
+                  │
+                  ▼
+         Business Logic Result
+                  │
+                  ▼
+             AI Response
 ```
 
 ---
 
-## Project Structure
+# Project Structure
 
 ```
 src
-├── controller
-├── service
-│   └── impl
-├── dto
-├── config
-├── exception
-└── resources
-    └── prompts
+└── main
+    ├── java
+    │   └── com.aiengineeringpatterns
+    │       ├── config
+    │       ├── controller
+    │       ├── dto
+    │       ├── exception
+    │       ├── service
+    │       │   └── impl
+    │       └── tool
+    └── resources
+        └── prompts
 ```
 
 ---
 
-## API
+# Example Requests
 
-### Chat with AI
-
-**POST**
+### Chat
 
 ```
-/api/v1/chat
-```
-
-Request
-
-```json
-{
-  "message": "Explain Kafka in simple terms."
-}
+What is 245 + 178?
 ```
 
 Response
 
-```json
-{
-  "response": "Kafka is a distributed event streaming platform..."
-}
+```
+423
 ```
 
 ---
 
-## Running the Application
+```
+Multiply 45 by 12
+```
 
-### 1. Start Ollama
+Response
+
+```
+540
+```
+
+---
+
+# How Tool Calling Works
+
+1. User sends a natural language prompt.
+2. Spring AI forwards the prompt to the LLM.
+3. The LLM determines that a tool is required.
+4. Spring AI invokes the appropriate Java method.
+5. The tool executes deterministic business logic.
+6. The result is returned to the LLM.
+7. The LLM generates a natural language response.
+
+---
+
+# Key Classes
+
+```
+ChatController
+ChatService
+ChatServiceImpl
+AiConfig
+
+CalculatorTool
+CalculatorService
+CalculatorServiceImpl
+```
+
+---
+
+# Design Decisions
+
+- Layered Architecture
+- One Tool per Business Capability
+- Business Logic isolated inside Services
+- Stateless Spring Beans
+- Constructor Injection
+- Externalized System Prompt
+- Global Exception Handling
+
+---
+
+# Learning Outcomes
+
+After completing this branch, you will understand:
+
+- Spring AI Tool Calling
+- @Tool annotation
+- ChatClient.defaultTools(...)
+- AI invoking Java methods
+- Separating AI orchestration from business logic
+- Enterprise project structure
+
+---
+
+# Running the Application
+
+Start Ollama
 
 ```bash
 docker compose up -d
 ```
 
-### 2. Verify Ollama
-
-```bash
-docker ps
-```
-
-### 3. Run Spring Boot
+Run Spring Boot
 
 ```bash
 mvn spring-boot:run
 ```
 
----
+Example Request
 
-## Design Decisions
+```
+POST /api/v1/chat
+```
 
-- Uses Spring AI instead of directly calling LLM APIs.
-- Runs a local LLM using Ollama to avoid external API dependencies.
-- Separates Controller, Service, and Configuration layers.
-- Uses immutable Java Records for DTOs.
-- Uses global exception handling for consistent API responses.
-
----
-
-## Current Limitations
-
-This branch intentionally focuses on a basic AI assistant.
-
-Not included:
-
-- Conversation Memory
-- Tool Calling
-- Streaming Responses
-- RAG
-- AI Agents
-- Vector Database
-- Authentication
-
-These topics will be introduced in subsequent branches.
+```json
+{
+  "message": "What is 245 + 178?"
+}
+```
 
 ---
 
-## Next Branch
+# Next Branch
 
-**Branch 02 - Tool Calling**
+## Branch 03 - Model Context Protocol (MCP)
 
-Topics:
-
-- Function Calling
-- Java Tool Integration
-- Multi-tool Execution
-- AI Decision Making
-- Structured Responses
-
----
-
-## Learning Outcomes
-
-After completing this branch, you will understand:
-
-- Spring AI fundamentals
-- Integrating a local LLM
-- Building AI-enabled REST APIs
-- Basic prompt execution
-- Clean architecture for AI applications
+In the next branch, the AI application will communicate with external tools and services using the **Model Context Protocol (MCP)**, enabling standardized integration beyond in-process Java methods.
 
 ---
 
 ## License
 
-MIT
+MIT License
