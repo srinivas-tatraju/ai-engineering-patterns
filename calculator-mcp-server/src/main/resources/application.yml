@@ -1,0 +1,14 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: calculator-mcp-server
+
+  ai:
+    mcp:
+      server:
+        protocol: STREAMABLE
+        name: calculator-mcp-server
+        version: 1.0.0
+        type: SYNC

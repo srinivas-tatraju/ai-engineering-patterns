@@ -1,3 +1,6 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: ai-engineering-patterns
@@ -9,5 +12,12 @@ spring:
         options:
           model: llama3.1
 
-server:
-  port: 8080
+    mcp:
+      client:
+        enabled: true
+        type: SYNC
+
+        streamable-http:
+          connections:
+            calculator-server:
+              url: http://localhost:8081

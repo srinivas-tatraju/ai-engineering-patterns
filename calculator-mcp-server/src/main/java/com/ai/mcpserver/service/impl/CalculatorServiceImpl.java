@@ -1,8 +1,8 @@
-package com.aiengineeringpatterns.service.impl;
+package com.ai.mcpserver.service.impl;
 
-
-import com.aiengineeringpatterns.service.CalculatorService;
+import com.ai.mcpserver.service.CalculatorService;
 import org.springframework.stereotype.Service;
+
 
 @Service
 public class CalculatorServiceImpl implements CalculatorService {

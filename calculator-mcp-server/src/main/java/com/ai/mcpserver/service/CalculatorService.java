@@ -1,5 +1,4 @@
-package com.aiengineeringpatterns.service;
-
+package com.ai.mcpserver.service;
 
 public interface CalculatorService {
 
