@@ -1,11 +1,12 @@
-package com.aiengineeringpatterns.tool;
+package com.ai.mcpserver.tool;
 
-import com.aiengineeringpatterns.service.CalculatorService;
+
+
+import com.ai.mcpserver.service.CalculatorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.stereotype.Component;
-
 
 @Slf4j
 @Component
@@ -16,7 +17,7 @@ public class CalculatorTool {
 
     @Tool(description = "Adds two numbers")
     public double add(double a, double b) {
-        log.info("CalculatorTool.add({}, {})", a, b);
+        System.out.println("******** REMOTE MCP SERVER TOOL ********");
         return calculatorService.add(a, b);
     }
 
