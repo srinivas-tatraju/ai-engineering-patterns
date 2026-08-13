@@ -14,7 +14,7 @@ The goal of this repository is to demonstrate how AI capabilities can be integra
 | ✅ 02-tool-calling             | Completed | AI Tool Calling with Spring AI             |
 | ✅ 03-model-context-protocol   | Completed | Remote Tool Integration using MCP          |
 | ✅ 04-ai-recommendation-engine | Completed | AI-powered Product Recommendation Engine   |
-| ⏳ 05-ai-workflows             | Planned   | Multi-step AI Workflows                    |
+| ✅ 05-ai-workflows             | Completed | Multi-step AI Workflow Orchestration       |
 | ⏳ 06-event-driven-ai          | Planned   | Kafka + AI Integration                     |
 | ⏳ 07-rag                      | Planned   | Retrieval Augmented Generation             |
 | ⏳ 08-ai-agents                | Planned   | Autonomous AI Agents                       |
@@ -35,22 +35,41 @@ The goal of this repository is to demonstrate how AI capabilities can be integra
 
 ---
 
-# Branch 04 — AI Recommendation Engine
+# Branch 05 — AI Workflows
 
-Branch 04 demonstrates how an AI model can be used to make product recommendations while keeping **business rules and authoritative data under application control**.
+Branch 05 demonstrates how to orchestrate **multiple AI and deterministic application steps** into a single workflow.
 
-The application combines:
+The workflow combines:
 
-* Structured customer information
-* Deterministic eligibility rules
-* Product relevance filtering
-* LLM-based recommendation
-* Structured AI output
-* Application-side validation
+* Structured workflow state
+* Deterministic Java processing
+* LLM-powered content generation
+* Sequential workflow steps
+* Business-rule validation
+* Typed data passed between workflow stages
 
 The key principle is:
 
-> **Use deterministic code for business rules and AI for interpretation and recommendation.**
+> **AI should be used where reasoning or natural-language generation adds value, while deterministic business rules should remain in application code.**
+
+---
+
+# Use Case
+
+The branch implements a simple **AI Travel Planning Workflow**.
+
+Example request:
+
+```json
+{
+  "destination": "Vancouver",
+  "numberOfDays": 4,
+  "budget": 1500,
+  "preferences": "Sightseeing and nature"
+}
+```
+
+The workflow generates a day-by-day itinerary and validates whether the estimated trip cost fits within the customer's budget.
 
 ---
 
@@ -60,116 +79,134 @@ The key principle is:
                          User
                            │
                            ▼
-                Recommendation API
+                  WorkflowController
                            │
                            ▼
-                RecommendationService
+                    TravelWorkflow
                            │
                            ▼
-                    CustomerProfile
+                 RequirementExtractor
+                       [Java]
                            │
                            ▼
-                    ProductCatalog
-                     │           │
-                     │           └── Category Relevance
-                     └────────────── Fee Eligibility
+                  TravelRequirements
                            │
+              ┌────────────┴────────────┐
+              ▼                         ▼
+     ItineraryGenerator          BudgetValidator
+           [LLM]                     [Java]
+              │                         │
+              ▼                         ▼
+          Itinerary              Budget Result
+              │                         │
+              └────────────┬────────────┘
                            ▼
-                   Candidate Products
-                           │
-                           ▼
-                       ChatClient
-                           │
-                           ▼
-                        Ollama
-                           │
-                           ▼
-              RecommendationDecision
-                 │       │        │
-                 │       │        └── confidence
-                 │       └────────── reason
-                 └────────────────── productId
-                           │
-                           ▼
-                 Java Product Validation
-                           │
-                           ▼
-                    Trusted Product
-                           │
-                           ▼
-                RecommendationResponse
+                    WorkflowResponse
 ```
 
 ---
 
-# Key Design Principle
+# Workflow Execution
 
-The LLM does **not** generate authoritative product information.
+The workflow consists of multiple steps.
 
-The LLM returns:
+### Step 1 — Requirement Preparation
+
+The incoming request is transformed into workflow state:
 
 ```text
-productId
-reason
-confidence
+WorkflowRequest
+      ↓
+RequirementExtractor
+      ↓
+TravelRequirements
 ```
 
-Java then validates the `productId` against the trusted product catalog and returns the actual product information.
-
-This prevents the AI from inventing product attributes such as:
-
-* Annual fee
-* Product name
-* Product category
-* Product features
+This step is deterministic and does not require an LLM.
 
 ---
 
-# Recommendation Flow
+### Step 2 — AI Itinerary Generation
 
-For example, a customer may provide:
-
-```json
-{
-  "customerId": "CUST-001",
-  "customerProfile": {
-    "customerId": "CUST-001",
-    "name": "John",
-    "monthlySpending": 50000,
-    "primarySpendingCategory": "TRAVEL",
-    "maxAnnualFee": 100
-  },
-  "requirement": "I travel frequently, spend a lot on dining, and want a low annual fee."
-}
-```
-
-The application first applies deterministic filtering.
-
-For example:
+The structured requirements are passed to the LLM through Spring AI:
 
 ```text
-Annual Fee <= Customer Maximum Fee
+TravelRequirements
+      ↓
+ChatClient
+      ↓
+Ollama / Llama 3.1
+      ↓
+Itinerary
 ```
 
-and:
+The model generates a day-by-day travel itinerary based on:
+
+* Destination
+* Number of days
+* Budget
+* Preferences
+
+---
+
+### Step 3 — Budget Validation
+
+Budget validation remains deterministic Java logic.
+
+The current implementation uses an estimated daily cost:
 
 ```text
-Product Category = Customer Primary Spending Category
+Estimated daily cost = $300
 ```
 
-Only relevant products are then provided to the AI model.
+For a four-day trip:
 
-The AI produces a structured decision such as:
-
-```json
-{
-  "productId": "CC-001",
-  "reason": "Matches customer's primary spending category and annual fee is within the maximum allowed limit.",
-  "confidence": 0.99
-}
+```text
+4 × $300 = $1,200
 ```
 
-Java validates `CC-001` and retrieves the authoritative product from the catalog.
+Therefore:
+
+```text
+Budget = $1,500
+Estimated cost = $1,200
+
+Within budget = true
+```
+
+For:
+
+```text
+Budget = $800
+Estimated cost = $1,200
+
+Within budget = false
+```
+
+---
+
+# MCP Integration
+
+The main AI application continues to use the **MCP Client** introduced in Branch 03.
+
+The repository therefore contains two Spring Boot applications:
+
+```text
+AI Engineering Patterns
+│
+├── Main AI Application
+│   └── MCP Client
+│       └── localhost:8080
+│
+└── Calculator MCP Server
+    └── localhost:8081
+```
+
+The MCP Client connects to the Calculator MCP Server using MCP over HTTP.
+
+The MCP server provides the calculator tools used by the application.
+
+The AI Workflow itself does not require the calculator tool, but the MCP infrastructure remains part of the application from the previous branch.
 
 ---
 
@@ -177,87 +214,110 @@ Java validates `CC-001` and retrieves the authoritative product from the catalog
 
 ```json
 {
-  "product": {
-    "productId": "CC-001",
-    "name": "Travel Rewards Card",
-    "category": "TRAVEL",
-    "annualFee": 99.0,
-    "description": "Travel rewards, airport benefits and dining rewards"
+  "destination": "Vancouver",
+  "numberOfDays": 4,
+  "itinerary": {
+    "destination": "Vancouver",
+    "dailyPlans": [
+      "Day 1: Explore Stanley Park and Granville Island",
+      "Day 2: Visit Capilano Suspension Bridge and Grouse Mountain",
+      "Day 3: Discover Gastown and English Bay",
+      "Day 4: Explore local attractions and nature"
+    ]
   },
-  "reason": "Matches customer's primary spending category and annual fee is within the maximum allowed limit.",
-  "confidence": 0.99
+  "withinBudget": true
 }
 ```
 
----
-
-# Product Catalog
-
-The current implementation uses an in-memory catalog containing:
-
-| Product             | Category | Annual Fee |
-| ------------------- | -------- | ---------: |
-| Travel Rewards Card | TRAVEL   |         99 |
-| Cashback Card       | CASHBACK |         49 |
-| Premium Travel Card | TRAVEL   |        199 |
-| Everyday Card       | GENERAL  |          0 |
-
-The catalog is intentionally kept in memory for this branch so that the focus remains on the AI recommendation pattern rather than database infrastructure.
+The exact itinerary is generated by the LLM and may vary between requests.
 
 ---
 
-# Important AI Engineering Patterns
+# Key AI Engineering Patterns
 
-### 1. Deterministic Business Rules
+### 1. Workflow Orchestration
 
-Business constraints such as eligibility should be enforced by Java.
+Multiple independent processing steps are coordinated by a single workflow:
 
 ```text
-Customer maximum fee = 100
-
-Product fee = 199
-
-→ Product rejected
+Request
+  ↓
+Step 1
+  ↓
+Step 2
+  ↓
+Step 3
+  ↓
+Response
 ```
 
-The LLM should not be responsible for enforcing hard business constraints.
+---
 
-### 2. AI for Judgment
+### 2. Typed Workflow State
 
-The LLM is used where natural language understanding and qualitative judgment provide value.
-
-Examples:
-
-* Understanding customer requirements
-* Comparing relevant products
-* Generating recommendation reasoning
-* Providing a confidence score
-
-### 3. Structured AI Output
-
-Instead of relying on free-form text, the application expects:
+Instead of passing arbitrary strings between steps, the workflow passes typed objects:
 
 ```text
-RecommendationDecision
-    ├── productId
-    ├── reason
-    └── confidence
+WorkflowRequest
+      ↓
+TravelRequirements
+      ↓
+Itinerary
+      ↓
+WorkflowResponse
 ```
 
-### 4. AI Output Validation
+This makes the workflow easier to understand, test, and maintain.
 
-The application validates the AI-generated `productId` against the trusted catalog before returning the result.
+---
 
-### 5. Graceful Handling of No Candidates
+### 3. AI + Deterministic Processing
 
-The application checks for an empty candidate list before calling the LLM.
+The workflow deliberately combines both approaches:
 
 ```text
-No suitable products
-        ↓
-Do not invoke LLM
-        ↓
-Return clear error
+AI
+ └── Generate travel itinerary
+
+Java
+ ├── Prepare workflow state
+ └── Validate budget
+```
+
+The LLM is not used for deterministic business rules.
+
+---
+
+### 4. Structured AI Output
+
+The itinerary is represented using a Java record:
+
+```text
+Itinerary
+ ├── destination
+ └── dailyPlans
+```
+
+This provides a defined contract between the AI layer and the application.
+
+---
+
+### 5. Separation of Responsibilities
+
+Each workflow component has a focused responsibility:
+
+```text
+TravelWorkflow
+    → Orchestrates the workflow
+
+RequirementExtractor
+    → Prepares workflow state
+
+ItineraryGenerator
+    → Uses AI to generate itinerary
+
+BudgetValidator
+    → Applies deterministic business rules
 ```
 
 ---
@@ -277,8 +337,8 @@ ai-engineering-patterns
 │   │       │       ├── dto
 │   │       │       ├── exception
 │   │       │       ├── model
-│   │       │       └── service
-│   │       │           └── impl
+│   │       │       ├── service
+│   │       │       └── workflow
 │   │       └── resources
 │   │
 │   └── pom.xml
@@ -295,7 +355,17 @@ ai-engineering-patterns
 
 # Running the Application
 
-## Start Ollama
+Branch 05 depends on the existing MCP infrastructure from Branch 03.
+
+There are **three components** that need to be running:
+
+1. Ollama
+2. Calculator MCP Server
+3. AI Engineering Patterns application (MCP Client)
+
+---
+
+## 1. Start Ollama
 
 From the `docker` directory:
 
@@ -303,7 +373,7 @@ From the `docker` directory:
 docker compose up -d
 ```
 
-Make sure the Llama model is available:
+Verify the model:
 
 ```bash
 docker exec -it ollama ollama list
@@ -315,51 +385,105 @@ If required:
 docker exec -it ollama ollama pull llama3.1
 ```
 
----
-
-## Start the Application
-
-From:
+Ollama runs on:
 
 ```text
-ai-engineering-patterns/
+http://localhost:11434
 ```
 
-run:
+---
+
+## 2. Start Calculator MCP Server
+
+Navigate to:
+
+```text
+calculator-mcp-server/
+```
+
+Run:
 
 ```bash
 mvn spring-boot:run
 ```
 
-The application runs on:
+The MCP Server runs on:
+
+```text
+http://localhost:8081
+```
+
+The server exposes calculator functionality through the Model Context Protocol.
+
+---
+
+## 3. Start AI Engineering Patterns
+
+Navigate to:
+
+```text
+ai-engineering-patterns/
+```
+
+Run:
+
+```bash
+mvn spring-boot:run
+```
+
+The main AI application runs on:
 
 ```text
 http://localhost:8080
 ```
 
+This application also contains the MCP Client, which connects to the Calculator MCP Server.
+
+---
+
+## Startup Order
+
+Start the components in this order:
+
+```text
+1. Ollama
+      │
+      ▼
+2. Calculator MCP Server
+   localhost:8081
+      │
+      ▼
+3. AI Engineering Patterns
+   MCP Client
+   localhost:8080
+```
+
+The MCP Client currently initializes its connection to the MCP Server during application startup, so the MCP Server should be running before starting the main AI application.
+
 ---
 
 # API
 
-### Recommendation
+### AI Recommendation
 
 ```http
 POST /api/v1/recommendations
+```
+
+### AI Travel Workflow
+
+```http
+POST /api/v1/workflows/travel
 ```
 
 Example:
 
 ```json
 {
-  "customerId": "CUST-001",
-  "customerProfile": {
-    "customerId": "CUST-001",
-    "name": "John",
-    "monthlySpending": 50000,
-    "primarySpendingCategory": "TRAVEL",
-    "maxAnnualFee": 100
-  },
-  "requirement": "I travel frequently, spend a lot on dining, and want a low annual fee."
+  "destination": "Vancouver",
+  "numberOfDays": 4,
+  "budget": 1500,
+  "preferences": "Sightseeing and nature"
 }
 ```
 
@@ -367,16 +491,17 @@ Example:
 
 # Learning Outcomes
 
-After completing Branch 04, the project demonstrates:
+After completing Branch 05, the project demonstrates:
 
+* AI workflow orchestration
 * Spring AI with Ollama
-* Structured AI responses
-* AI-powered recommendation
-* Deterministic business-rule enforcement
-* AI output validation
-* Separation of AI reasoning from authoritative business data
-* Handling of AI edge cases
-* Layered Spring Boot architecture
+* Sequential workflow execution
+* Typed workflow state
+* Structured AI output
+* Combining AI and deterministic processing
+* Separation of AI responsibilities from business rules
+* MCP Client and MCP Server integration
+* Basic workflow validation
 
 ---
 
@@ -384,8 +509,7 @@ After completing Branch 04, the project demonstrates:
 
 Upcoming branches will expand the platform into:
 
-* Multi-step AI Workflows
-* Kafka and Event-Driven AI
+* Event-Driven AI with Kafka
 * Retrieval Augmented Generation (RAG)
 * Autonomous AI Agents
 * Production-oriented AI architecture
