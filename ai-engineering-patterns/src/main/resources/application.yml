@@ -21,3 +21,15 @@ spring:
           connections:
             calculator-server:
               url: http://localhost:8081
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+    consumer:
+      group-id: ai-risk-consumer
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+      properties:
+        "[spring.json.value.default.type]": com.aiengineeringpatterns.dto.TransactionEvent
+        "[spring.json.trusted.packages]": com.aiengineeringpatterns.dto
